@@ -18,8 +18,8 @@
 """
 Python Javatools
 
-author: Christopher O'Brien  <obriencj@gmail.com>
-license: LGPL v.3
+:author: Christopher O'Brien  <obriencj@gmail.com>
+:license: LGPL v.3
 """
 
 
@@ -34,23 +34,15 @@ from extras import pylint_cmd, cheetah_build_py_cmd
 
 
 setup(name = "javatools",
-      version = "1.4.0",
+      version = "2.0.0",
 
       packages = [ "javatools",
-                   "javatools.cheetah" ],
+                   "javatools.cheetah",
+                   "javatools.cli", ],
 
       package_data = { "javatools.cheetah": [ "data/*.css",
                                               "data/*.js",
                                               "data/*.png" ] },
-
-      scripts = [ "scripts/classdiff",
-                  "scripts/classinfo",
-                  "scripts/distdiff",
-                  "scripts/distinfo",
-                  "scripts/jardiff",
-                  "scripts/jarinfo",
-                  "scripts/jarutil",
-                  "scripts/manifest" ],
 
       test_suite = "tests",
 
@@ -64,7 +56,7 @@ setup(name = "javatools",
       " class files and JARs",
 
       provides = [ "javatools" ],
-      requires = [ "Cheetah" ],
+      requires = [ "Cheetah", "pyopenssl" ],
       platforms = [ "python2 >= 2.6" ],
 
       classifiers = [ "Development Status :: 5 - Production/Stable",
