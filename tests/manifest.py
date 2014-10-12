@@ -22,7 +22,7 @@ license: LGPL v.3
 
 
 from . import get_data_fn
-from javatools.manifest import main, Manifest, SignatureManifest, verify
+from javatools.manifest import main, Manifest
 
 from os import unlink
 from shutil import copyfile
@@ -94,15 +94,6 @@ class ManifestTest(TestCase):
 
         return mf
 
-    def verify_signature(self, signed_jar):
-        certificate = get_data_fn("javatools-cert.pem")
-        jar_data = get_data_fn(signed_jar)
-        error_message = verify(certificate, jar_data, "UNUSED")
-
-        self.assertIsNone(error_message,
-                          "\"%s\" verification against \"%s\" failed: %s"
-                          % (jar_data, certificate, error_message))
-
 
     def test_create_sha1(self):
         self.manifest_cli_create("-d SHA1", "manifest.SHA1.mf")
@@ -130,41 +121,15 @@ class ManifestTest(TestCase):
         self.assertEqual(mf.linesep, "\r\n")
 
 
-    def test_verify_signature_by_javatools(self):
-        self.verify_signature("manifest-signed.jar")
-
-
-    def test_verify_signature_by_jarsigner(self):
-        self.verify_signature("manifest-signed-by-jarsigner.jar")
-
-
-    def test_cli_sign_and_verify(self):
-
-        src = get_data_fn("manifest-sample3.jar")
-        key_alias = "SAMPLE3"
-        cert = get_data_fn("javatools-cert.pem")
-        key = get_data_fn("javatools.pem")
-        tmp_jar = mkstemp()[1]
-        copyfile(src, tmp_jar)
-        cmd = ["manifest", "-s", cert, key, key_alias, tmp_jar]
-        self.assertEqual(main(cmd), 0, "Command %s returned non-zero status"
-                         % " ".join(cmd))
-
-        certificate = get_data_fn("javatools-cert.pem")
-        error_message = verify(certificate, tmp_jar, key_alias)
-        self.assertIsNone(error_message,
-                          "Verification of JAR which we just signed failed: %s"
-                          % error_message)
-
-        unlink(tmp_jar)
-
     def test_verify_mf_checksums_no_whole_digest(self):
         sf_file = "sf-no-whole-digest.sf"
-        mf_file = "sf-no-whole-digest.mf"
         sf = SignatureManifest()
         sf.parse_file(get_data_fn(sf_file))
+
+        mf_file = "sf-no-whole-digest.mf"
         mf = Manifest()
         mf.parse_file(get_data_fn(mf_file))
+
         error_message = sf.verify_manifest_checksums(mf)
         self.assertIsNone(error_message,
             "Verification of signature file %s against manifest %s failed: %s"
@@ -189,5 +154,7 @@ class ManifestTest(TestCase):
         self.assertIsNone(error_message,
              "Signature file digest verification of %s against manifest %s failed: %s" \
             % (sf_ok_file, mf_ok_file, error_message))
+
+
 #
 # The end.

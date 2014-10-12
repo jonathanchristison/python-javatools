@@ -53,7 +53,15 @@ REQ_BY_CLASS = "class.requires"
 PROV_BY_CLASS = "class.provides"
 
 
+class VerificationFailure(Exception):
+    """
+    unable to verify a JAR's manifest or signature
+    """
+    pass
+
+
 class JarInfo(object):
+
 
     def __init__(self, filename=None, zipfile=None):
         if not (filename or zipfile):
@@ -150,9 +158,10 @@ class JarInfo(object):
 
 
     def get_manifest(self):
-
-        """ fetch the sections from the MANIFEST.MF file as a Manifest
-        instance, or None if no MANIFEST.MF entry present """
+        """
+        fetch the sections from the MANIFEST.MF file as a Manifest
+        instance, or None if no MANIFEST.MF entry present
+        """
 
         mf_entry = "META-INF/MANIFEST.MF"
 
@@ -167,15 +176,49 @@ class JarInfo(object):
 
 
     def get_zipfile(self):
+        """
+        Access the underlying zipfile instance, opening it if it does not
+        already exist.
+        """
+
         if self.zipfile is None:
             self.zipfile = zip_file(self.filename)
         return self.zipfile
 
 
     def close(self):
+        """
+        Close the underlying zipfile instance
+        """
+
         if self.zipfile:
             self.zipfile.close()
             self.zipfile = None
+
+
+    def verify_manifest(self):
+        manifest = self.get_manifest()
+        if manifest is None:
+            return 0
+        else:
+            return manifest.verify(self)
+
+
+    def verify_signature(self, keyalias=None):
+        manifest = self.get_manifest()
+
+        signatures = list()
+        if keyalias is None:
+            # gather all signature manifests and their detached
+            # signature files
+            pass
+        else:
+            # gather just the signature manifest and detached
+            # signature matching the given keyalias
+            pass
+
+        for sigman, desig in signatures:
+            pass
 
 
 def cli_jar_manifest_info(options, jarinfo):
