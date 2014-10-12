@@ -1,6 +1,6 @@
 Summary: Tools for inspecting and comparing binary Java class files
 Name: python-javatools
-Version: 1.4.0
+Version: 2.0.0
 Release: 0
 License: LGPL
 Group: Application/System
@@ -15,6 +15,7 @@ BuildArch: noarch
 
 Requires: python2 >= 2.6
 Requires: python-cheetah
+Requires: pyopenssl
 
 BuildRequires: python2-devel
 BuildRequires: python-cheetah
@@ -53,10 +54,12 @@ rm -rf %{buildroot}
 
 %changelog
 
-* Thu Jan 21 2014 Christopher O'Brien <obriencj@gmail.com> - 1.4.0-0
-- bump to 1.4.0
+* Sun Oct 12 2014 Christopher O'Brien <obriencj@gmail.com> - 2.0.0-0
+- bump to 2.0.0
 - added ChangeLog as its own file
 - move to setuptools
+- added support for jar signing and verification
+- re-organized cli invocations
 
 * Thu May 23 2013 Christopher O'Brien <obriencj@gmail.com> - 1.3-1
 - bump to 1.3
