@@ -27,6 +27,7 @@ from zipfile import is_zipfile, ZipFile, ZipInfo, _EndRecData
 from zlib import crc32
 from os import walk
 from os.path import getsize, isdir, isfile, islink, join, relpath
+from . import _BUFFERING
 from .dirutils import LEFT, RIGHT, DIFF, SAME
 from .dirutils import closing
 
@@ -37,9 +38,6 @@ __all__ = (
     "zip_file", "zip_entry_rollup",
     "LEFT", "RIGHT", "DIFF", "SAME",
 )
-
-
-_CHUNKSIZE = 2 ** 14
 
 
 def compare(left, right):
@@ -107,13 +105,13 @@ def _deep_different(left, right, entry):
     right
     """
 
-    left = chunk_zip_entry(left, entry)
-    right = chunk_zip_entry(right, entry)
+    with closing(left.open(entry)) as lopen:
+        with closing(right.open(entry)) as ropen:
 
-    for ldata, rdata in izip_longest(left, right):
-        if ldata != rdata:
-            return True
-    return False
+            lchunks = iter(partial(lopen.read, _BUFFERING), '')
+            rchunks = iter(partial(ropen.read, _BUFFERING), '')
+
+            return all(l != r for l, r in izip_longest(lchunks, rchunks))
 
 
 def collect_compare(left, right):
@@ -209,22 +207,23 @@ def is_zipstream(data):
     return result
 
 
-def file_crc32(filename, chunksize=_CHUNKSIZE):
+def file_crc32(filename, chunksize=_BUFFERING):
     """
     calculate the CRC32 of the contents of filename
     """
 
     check = 0
     with open(filename, 'rb') as fd:
-        for data in iter(lambda:fd.read(chunksize), ""):
+        for data in iter(partial(fd.read, chunksize), ''):
             check = crc32(data, check)
     return check
 
 
 def _collect_infos(dirname):
-
-    """ Utility function used by ExplodedZipFile to generate ZipInfo
-    entries for all of the files and directories under dirname """
+    """
+    Utility function used by ExplodedZipFile to generate ZipInfo
+    entries for all of the files and directories under dirname
+    """
 
     for r, _ds, fs in walk(dirname):
         if not islink(r) and r != dirname:
@@ -340,19 +339,6 @@ def open_zip_entry(zipfile, name, mode='r'):
     """
 
     return closing(zipfile.open(name, mode))
-
-
-def chunk_zip_entry(zipfile, name, chunksize=_CHUNKSIZE):
-    """
-    opens an entry from an openex zip file archive and yields
-    sequential chunks of data from the resulting stream.
-    """
-
-    with open_zip_entry(zipfile, name, mode='r') as stream:
-        data = stream.read(chunksize)
-        while data:
-            yield data
-            data = stream.read(chunksize)
 
 
 def zip_entry_rollup(zipfile):

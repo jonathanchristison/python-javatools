@@ -86,19 +86,38 @@ _add_digest("SHA-384", "sha384")
 _add_digest("SHA-512", "sha512")
 
 
-def digest_stream(stream, buffering=_BUFFERING,
+def digest(data, digest_name='SHA-256', encoding='base64'):
+    dig = lookup_digest(digest_name)()
+    dig.update(chunk)
+    result = dig.digest().encode(encoding)
+
+    # the base64 encoding -- and only the base64 encoding -- appends a
+    # trailing \n character. Filter that out.
+    if encoding == "base64":
+        result = result[:-1]
+
+    return result
+
+
+def digests_data(data, digest_names=('MD5', 'SHA-256'),
+                encoding="base64"):
+
+    return tuple(digest(data,dn,encoding) for dn in digest_names)
+
+
+def digests_stream(stream, buffering=_BUFFERING,
                   digest_names=('MD5', 'SHA-256'), encoding="base64"):
 
     """
     Digests a stream of data into a number of hashes at once.
     """
 
-    return digest_chunks(iter(partial(stream.read, buffering), ''),
-                         digest_names, encoding)
+    return digests_chunks(iter(partial(stream.read, buffering), ''),
+                          digest_names, encoding)
 
 
-def digest_chunks(chunk_iter, digest_names=('MD5', 'SHA-256'),
-                  encoding="base64"):
+def digests_chunks(chunk_iter, digest_names=('MD5', 'SHA-256'),
+                   encoding="base64"):
     """
     Digests chunks of data into a number of hashes at once.
 

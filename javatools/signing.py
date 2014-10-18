@@ -28,9 +28,9 @@ References
 
 import os
 
-from .manifest import Manifest, NAMED_DIGESTS
-
-from base64 import b64encode
+from .manifest import Manifest
+from .digests import lookup_digest, digest
+from base64 import b64encode as b64
 
 
 __all__ = (
@@ -66,14 +66,14 @@ class SignatureManifest(Manifest):
 
         # determine a digest class to use based on the java-style
         # algorithm name
-        digest = _get_digest(java_algorithm)
+        digest = lookup_digest(java_algorithm)
 
         # calculate the checksum for the main manifest section. We'll
         # be re-using this digest to also calculate the total
         # checksum.
         h_all = digest()
         h_all.update(manifest.get_main_section())
-        self[main_key] = b64encode(h_all.digest())
+        self[main_key] = b64(h_all.digest())
 
         for sub_section in manifest.sub_sections.values():
             sub_data = sub_section.get_data(linesep)
@@ -83,14 +83,14 @@ class SignatureManifest(Manifest):
             h_section = digest()
             h_section.update(sub_data)
             sf_sect = self.create_section(sub_section.primary())
-            sf_sect[sect_key] = b64encode(h_section.digest())
+            sf_sect[sect_key] = b64(h_section.digest())
 
             # push this data into this total as well.
             h_all.update(sub_data)
 
         # after traversing all the sub sections, we now have the
         # digest of the whole manifest.
-        self[all_key] = b64encode(h_all.digest())
+        self[all_key] = b64(h_all.digest())
 
 
     def verify_manifest_checksums(self, manifest):
@@ -111,10 +111,7 @@ class SignatureManifest(Manifest):
         # digest should result in failure.
 
         for java_digest in self.keys_with_suffix("-Digest-Manifest"):
-            whole_mf_digest = b64_encoded_digest(
-                manifest.get_data(),
-                NAMED_DIGESTS[java_digest]
-            )
+            whole_mf_digest = digest(manifest.get_data(), java_digest)
 
             # It is enough for at least one digest to be correct
             if whole_mf_digest == self.get(java_digest + "-Digest-Manifest"):
@@ -128,10 +125,8 @@ class SignatureManifest(Manifest):
         at_least_one_main_attr_digest_matches = False
         for java_digest in self.keys_with_suffix(
                 "-Digest-Manifest-Main-Attributes"):
-            mf_main_attr_digest = b64_encoded_digest(
-                manifest.get_main_section(),
-                NAMED_DIGESTS[java_digest]
-            )
+            mf_main_attr_digest = digest(manifest.get_main_section(),
+                                         java_digest)
 
             if mf_main_attr_digest == self.get(
                     java_digest + "-Digest-Manifest-Main-Attributes"):
@@ -145,11 +140,10 @@ class SignatureManifest(Manifest):
         for s in manifest.sub_sections.values():
             at_least_one_section_digest_matches = False
             sf_section = self.create_section(s.primary(), overwrite=False)
+
             for java_digest in s.keys_with_suffix("-Digest"):
-                section_digest = b64_encoded_digest(
-                    s.get_data(manifest.linesep),
-                    NAMED_DIGESTS[java_digest]
-                )
+                section_digest = digest(s.get_data(manifest.linesep),
+                                        java_digest)
                 if section_digest == sf_section.get(java_digest + "-Digest"):
                     at_least_one_section_digest_matches = True
                     break
@@ -228,12 +222,6 @@ class SignatureManifest(Manifest):
         """
 
         pass
-
-
-def b64_encoded_digest(data, algorithm):
-    h = algorithm()
-    h.update(data)
-    return b64encode(h.digest())
 
 
 def verify_signature_block(certificate_file, content_file, signature):
