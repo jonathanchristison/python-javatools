@@ -66,6 +66,13 @@ setup(name = "javatools",
                       "Programming Language :: Python :: 2",
                       "Topic :: Software Development :: Disassemblers" ],
 
+      entry_points = {
+          'console_scripts': [
+              'classinfo=javatools.cli.classinfo:main',
+              'jarinfo=javatools.cli.jarinfo:main',
+          ],
+      },
+
       # extras stuff
       cmdclass = { 'build_py': cheetah_build_py_cmd,
                    'pylint': pylint_cmd } )
