@@ -22,14 +22,15 @@ digest utilities for python-javatools
 
 
 import hashlib
+from functools import partial
 
 from . import _BUFFERING
 
 
 __all__ = (
     "NAMED_DIGESTS", "UnsupportedDigest",
-    "register_digest", "lookup_digest",
-    "digest_stream", "digest_chunks",
+    "register_digest", "lookup_digest", "digest",
+    "digests_data", "digests_stream", "digests_chunks",
 )
 
 
@@ -88,7 +89,7 @@ _add_digest("SHA-512", "sha512")
 
 def digest(data, digest_name='SHA-256', encoding='base64'):
     dig = lookup_digest(digest_name)()
-    dig.update(chunk)
+    dig.update(data)
     result = dig.digest().encode(encoding)
 
     # the base64 encoding -- and only the base64 encoding -- appends a
