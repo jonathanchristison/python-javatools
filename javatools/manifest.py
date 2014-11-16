@@ -39,7 +39,7 @@ from zipfile import ZipFile
 from . import _BUFFERING
 from .change import GenericChange, SuperChange
 from .change import Addition, Removal
-from .digests import NAMED_DIGESTS, digest_stream, UnsupportedDigest
+from .digests import NAMED_DIGESTS, digests_stream, UnsupportedDigest
 from .dirutils import fnmatches, makedirsp
 
 
@@ -600,8 +600,10 @@ def cli_create(options, rest):
 
         sec = mf.create_section(name)
 
-        for digest_name, digest_value in \
-            izip(requested_digests, digest_stream(open_f(), requested_digests)):
+        with open_f() as fd:
+            digs = digests_stream(fd, requested_digests)
+
+        for digest_name, digest_value in izip(requested_digests, digs):
             sec[digest_name + "-Digest"] = digest_value
 
     output = sys.stdout
