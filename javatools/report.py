@@ -388,9 +388,10 @@ def _indent_change(change, out, options, indent):
 
 
 def _indent(stream, indent, *msgs):
-
-    """ write a message to stream, with indentation. Also ensures that
-    the output encoding of the messages is safe for writing. """
+    """
+    write a message to stream, with indentation. Also ensures that the
+    output encoding of the messages is safe for writing.
+    """
 
     for x in xrange(0, indent):
         stream.write("  ")
