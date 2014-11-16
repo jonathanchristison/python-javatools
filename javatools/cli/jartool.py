@@ -14,8 +14,8 @@
 
 
 """
-Module and utility for creating, modifying, signing, or verifying
-Java archives
+Utility for creating, modifying, signing, and verifying Java
+archives from the command line.
 
 :author: Christopher O'Brien  <obriencj@gmail.com>
 :license: LGPL
@@ -62,8 +62,18 @@ def create_optparser():
 
 
 def main(args):
+    """
+    Command-line entry point for the `jartool` utility
+    """
+
     parser = create_optparser()
-    return cli(parser, *parser.parse_args(args))
+
+    try:
+        return cli(parser, *parser.parse_args(args))
+
+    except KeyboardInterrupt:
+        print
+        return 130
 
 
 #
