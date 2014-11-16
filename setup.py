@@ -68,8 +68,8 @@ setup(name = "javatools",
 
       entry_points = {
           'console_scripts': [
-              'classinfo=javatools.cli.classinfo:main',
-              'jarinfo=javatools.cli.jarinfo:main',
+              'jt-classinfo=javatools.cli.classinfo:main',
+              'jt-jarinfo=javatools.cli.jarinfo:main',
           ],
       },
 
