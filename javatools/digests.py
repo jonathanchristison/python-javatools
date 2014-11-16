@@ -29,6 +29,7 @@ from . import _BUFFERING
 
 __all__ = (
     "NAMED_DIGESTS", "UnsupportedDigest",
+    "DEFAULT_DIGEST", "DEFAULT_DIGESTS",
     "register_digest", "lookup_digest", "digest",
     "digests_data", "digests_stream", "digests_chunks",
 )
@@ -87,7 +88,14 @@ _add_digest("SHA-384", "sha384")
 _add_digest("SHA-512", "sha512")
 
 
-def digest(data, digest_name='SHA-256', encoding='base64'):
+DEFAULT_DIGEST = 'SHA-256'
+DEFAULT_DIGESTS = ('MD5', 'SHA-256')
+
+
+def digest(data, digest_name=None, encoding='base64'):
+    if digest_name is None:
+        digest_name = DEFAULT_DIGEST
+
     dig = lookup_digest(digest_name)()
     dig.update(data)
     result = dig.digest().encode(encoding)
@@ -100,15 +108,12 @@ def digest(data, digest_name='SHA-256', encoding='base64'):
     return result
 
 
-def digests_data(data, digest_names=('MD5', 'SHA-256'),
-                encoding="base64"):
-
+def digests_data(data, digest_names=None, encoding="base64"):
     return tuple(digest(data,dn,encoding) for dn in digest_names)
 
 
-def digests_stream(stream, buffering=_BUFFERING,
-                  digest_names=('MD5', 'SHA-256'), encoding="base64"):
-
+def digests_stream(stream, digest_names=None, encoding="base64",
+                   buffering=_BUFFERING):
     """
     Digests a stream of data into a number of hashes at once.
     """
@@ -117,8 +122,7 @@ def digests_stream(stream, buffering=_BUFFERING,
                           digest_names, encoding)
 
 
-def digests_chunks(chunk_iter, digest_names=('MD5', 'SHA-256'),
-                   encoding="base64"):
+def digests_chunks(chunk_iter, digest_names=None, encoding="base64"):
     """
     Digests chunks of data into a number of hashes at once.
 
@@ -126,8 +130,9 @@ def digests_chunks(chunk_iter, digest_names=('MD5', 'SHA-256'),
     ----------
     chunk_iter : sequence of strings
       iterable series of strings representing the data to be hashed
-    digest_names : `tuple`, default ('MD5', 'SHA-256')
-      the Java names of the hash algorithms to calculate
+    digest_names : `tuple`, or `None`
+      if None, becomes `DEFAULT_DIGESTS`. The Java names of the hash
+      algorithms to calculate
     encoding : `str`, default "base64"
       encoding to represent the final digests in
 
@@ -142,6 +147,9 @@ def digests_chunks(chunk_iter, digest_names=('MD5', 'SHA-256'),
     exception : `UnsupportedDigest`
       when an unknown digest is specified in `digest_names`
     """
+
+    if digest_names is None:
+        digest_names = DEFAULT_DIGESTS
 
     digests = [lookup_digest(name)() for name in digest_names]
     for chunk in chunk_iter:
