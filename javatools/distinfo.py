@@ -38,8 +38,11 @@ PROV_BY_JAR = "jar.provides"
 class DistInfo(object):
 
 
-    def __init__(self, base_path):
+    def __init__(self, base_path, recursive=False):
         self.base_path = base_path
+
+        #Recurse into artifacts
+        self.recursive = recursive
 
         # a pair of strings useful for later reporting. Non-mandatory
         self.product = None
@@ -140,22 +143,49 @@ class DistInfo(object):
         return d
 
 
-    def get_jars(self):
+    def get_jars(self, zfh=None):
         """ sequence of entry names found in this distribution """
 
         from .jarinfo import JAR_PATTERNS
         from .dirutils import fnmatches
+        from os.path import join, split
 
-        for entry in self.get_contents():
-            if fnmatches(entry, *JAR_PATTERNS):
-                yield entry
+        if not zfh:
+            for entry in self.get_contents():
+                if fnmatches(entry, *JAR_PATTERNS):
+                    if self.recursive:
+                        if zfh:
+                            a = self.get_jarinfo(zipfile=zfh)
+                        else:
+                            a = self.get_jarinfo(entry)
+                        has_depth = False
+                        for ac in a.get_zipfile().namelist():
+                            if fnmatches(ac, *JAR_PATTERNS):
+                               has_depth = True
+                               artifact = a.get_zipfile().open(ac)
+                               yield artifact, ac, entry
+
+                        if not has_depth:
+                            yield None, None, entry
+                               #path=join(self._working_path(), split(entry)[1])
+                               #         )
+                    else:
+                        yield entry
+
+
 
 
     def get_jarinfo(self, entry):
         from .jarinfo import JarInfo
         from os.path import join
+        import zipfile
+        from cStringIO import StringIO
 
-        return JarInfo(join(self.base_path,entry))
+        if isinstance(entry, zipfile.ZipExtFile):
+            zd = StringIO(entry.read())
+            return JarInfo(zipfile=zipfile.ZipFile(zd))
+        else:
+            return JarInfo(join(self.base_path,entry))
 
 
     def get_classes(self):
@@ -182,6 +212,13 @@ class DistInfo(object):
             self._contents = tuple(_collect_dist(self._working_path()))
         return self._contents
 
+    def get_contents_recursive(self):
+        from .dirutils import fnmatches
+
+        for entry in self.contents():
+            if fnmatches(entry, *jarinfo.JAR_PATTERNS):
+                artifact.extract(entry, self._working_path())
+        get_contents_recursive()
 
     def close(self):
         """ if this was a zip'd distribution, any introspection
