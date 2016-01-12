@@ -149,26 +149,42 @@ class DistInfo(object):
         from .jarinfo import JAR_PATTERNS
         from .dirutils import fnmatches
         from os.path import join, split
+        import zipfile
 
-        if not zfh:
+        if zfh:
+            a = self.get_jarinfo(zfh)
+            #zd = StringIO(zfh.read())
+            for ac in a.get_zipfile().namelist():
+                if fnmatches(ac, *JAR_PATTERNS):
+                    artifact = a.get_zipfile().open(ac)
+                    acr = self.get_jarinfo(artifact)
+                    print acr
+                    for art in self.get_jars(zfh=artifact):
+                        yield ac, artifact
+                    yield ac, artifact
+
+
+        else:
             for entry in self.get_contents():
                 if fnmatches(entry, *JAR_PATTERNS):
                     if self.recursive:
-                        if zfh:
-                            a = self.get_jarinfo(zipfile=zfh)
-                        else:
-                            a = self.get_jarinfo(entry)
+                        a = self.get_jarinfo(entry)
                         has_depth = False
-                        for ac in a.get_zipfile().namelist():
-                            if fnmatches(ac, *JAR_PATTERNS):
-                               has_depth = True
-                               artifact = a.get_zipfile().open(ac)
-                               yield artifact, ac, entry
+                        try:
+                            for ac in a.get_zipfile().namelist():
+                                if fnmatches(ac, *JAR_PATTERNS):
+                                    has_depth = True
+                                    artifact = a.get_zipfile().open(ac)
+                                    for n, af in self.get_jars(zfh=artifact):
+                                        yield None, n, af
+                                    yield artifact, ac, entry
+                        except StopIteration:
+                            raise
+                        except Exception as e:
+                            yield None, entry, e
 
                         if not has_depth:
                             yield None, None, entry
-                               #path=join(self._working_path(), split(entry)[1])
-                               #         )
                     else:
                         yield entry
 
